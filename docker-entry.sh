@@ -18,5 +18,8 @@ if [ -z "$PORT" ] && [ -n "$SERVER_PORT" ]; then
   export PORT="$SERVER_PORT"
 fi
 
+# Ensure any packaged .env does not override Railway variables
+rm -f .env || true
+
 # Start application
 exec npm run start:prod
