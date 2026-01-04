@@ -1,7 +1,11 @@
 #!/bin/sh
 set -e
 
-# If DATABASE_URL is not set but DATABASE_CONNECTION_URI is, map it
+# Map Prisma envs both ways to avoid empty var issues
+# Prefer DATABASE_CONNECTION_URI when present; otherwise fall back to DATABASE_URL
+if [ -z "$DATABASE_CONNECTION_URI" ] && [ -n "$DATABASE_URL" ]; then
+  export DATABASE_CONNECTION_URI="$DATABASE_URL"
+fi
 if [ -z "$DATABASE_URL" ] && [ -n "$DATABASE_CONNECTION_URI" ]; then
   export DATABASE_URL="$DATABASE_CONNECTION_URI"
 fi
