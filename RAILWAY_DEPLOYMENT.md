@@ -258,7 +258,7 @@ Railway otomatik olarak şunları izler:
 1. **Logs'u kontrol edin:** Deployment logs'da hata mesajlarını arayın
 2. **Environment variables'ı kontrol edin:** Tüm gerekli değişkenleri eklediniz mi?
 3. **Build logs'u inceleyin:** Hangi adımda hata oluşuyor?
-4. **railway.toml kontrol edin:** `startCommand` içinde `docker-compose up` KULLANMAYIN! Railway, Dockerfile'dan otomatik olarak CMD'yi kullanır.
+4. **railway.toml kontrol edin:** `startCommand` ile `docker-compose up` KULLANMAYIN! Railway, Docker deployment sırasında Dockerfile'daki CMD komutunu otomatik olarak kullanır.
 
 ### API Yanıt Vermiyor
 
