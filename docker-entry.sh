@@ -20,6 +20,8 @@ fi
 
 # Ensure any packaged .env does not override Railway variables
 rm -f .env || true
+rm -f /evolution/.env || true
+cd /evolution || true
 
 # Start application
 exec npm run start:prod
