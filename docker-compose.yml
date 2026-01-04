@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: evolution-api
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    networks:
+      - evolution-network
+
+  # PostgreSQL Database (Optional but recommended)
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution_password
+      POSTGRES_DB: evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - evolution-network
+    ports:
+      - "5432:5432"
+
+  # Redis (Optional - for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - evolution-network
+    volumes:
+      - redis_data:/data
+
+volumes:
+  evolution_instances:
+  evolution_store:
+  postgres_data:
+  redis_data:
+
+networks:
+  evolution-network:
+    driver: bridge
