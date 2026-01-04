@@ -31,6 +31,17 @@ esac
 # Log chosen datasource for easier debugging
 echo "Resolved Prisma datasource: $DATABASE_CONNECTION_URI"
 
+# Apply Prisma migrations to create missing tables (Instance, etc.)
+echo "Running Prisma migrations..."
+if command -v npx >/dev/null 2>&1; then
+  # Try deploy; if no migrations, fall back to db push
+  npx prisma migrate deploy || npx prisma db push || true
+  # Ensure client is generated for the current schema
+  npx prisma generate || true
+else
+  echo "npx not available; skipping Prisma CLI"
+fi
+
 # Keep PORT and SERVER_PORT in sync (Railway uses PORT)
 if [ -z "$SERVER_PORT" ] && [ -n "$PORT" ]; then
   export SERVER_PORT="$PORT"
