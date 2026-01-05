@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+mask_uri() {
+  # Mask password segment in URIs like scheme://user:password@host
+  # Keep user/host visible, hide password to avoid leaking secrets in logs.
+  printf '%s' "$1" | sed -E 's#(://[^:/?#]+):[^@/]+@#\1:***@#'
+}
+
 # Map Prisma envs both ways to avoid empty var issues
 # Prefer DATABASE_CONNECTION_URI when present; otherwise fall back to DATABASE_URL
 if [ -z "$DATABASE_CONNECTION_URI" ] && [ -n "$DATABASE_URL" ]; then
@@ -22,18 +28,37 @@ case "$DATABASE_CONNECTION_URI" in
   *sslmode=*) ;;
   *)
     if echo "$DATABASE_CONNECTION_URI" | grep -qE "postgresql://"; then
-      export DATABASE_CONNECTION_URI="${DATABASE_CONNECTION_URI}?sslmode=require"
+      if echo "$DATABASE_CONNECTION_URI" | grep -q "\?"; then
+        export DATABASE_CONNECTION_URI="${DATABASE_CONNECTION_URI}&sslmode=require"
+      else
+        export DATABASE_CONNECTION_URI="${DATABASE_CONNECTION_URI}?sslmode=require"
+      fi
       export DATABASE_URL="$DATABASE_CONNECTION_URI"
     fi
     ;;
 esac
 
 # Log chosen datasource for easier debugging
-echo "Resolved Prisma datasource: $DATABASE_CONNECTION_URI"
+if [ -n "$DATABASE_CONNECTION_URI" ]; then
+  echo "Resolved Prisma datasource: $(mask_uri "$DATABASE_CONNECTION_URI")"
+else
+  echo "Resolved Prisma datasource: (empty)"
+fi
+
+case "$(printf '%s' "${DATABASE_ENABLED:-}" | tr '[:upper:]' '[:lower:]')"" in
+  false|0)
+    :
+    ;;
+  *)
+    if [ -z "$DATABASE_CONNECTION_URI" ] && [ -z "$DATABASE_URL" ]; then
+      echo "Warning: DATABASE_ENABLED is not false, but no database URL is set (DATABASE_CONNECTION_URI/DATABASE_URL/PG*). DB-backed endpoints may fail."
+    fi
+    ;;
+esac
 
 # Respect DATABASE_ENABLED=false by disabling Prisma repository
-case "$DATABASE_ENABLED" in
-  false|0|"false"|"0")
+case "$(printf '%s' "${DATABASE_ENABLED:-}" | tr '[:upper:]' '[:lower:]')" in
+  false|0)
     echo "DATABASE_ENABLED=false → disabling Prisma repository"
     unset DATABASE_CONNECTION_URI
     unset DATABASE_URL
