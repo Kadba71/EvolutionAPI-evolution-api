@@ -29,7 +29,7 @@ function Update-DockerTag([string]$tag){
   }
 }
 
-function Commit-And-Push([string]$tag){
+function Publish-Changes([string]$tag){
   Push-Location $repoRoot
   git add $dockerfilePath | Out-Null
   git commit -m "chore(test-qr): pin atendai/evolution-api:$tag for QR test" | Out-Null
@@ -56,11 +56,11 @@ function Wait-Service([int]$timeout){
   return $false
 }
 
-function Create-Instance([string]$name){
+function New-Instance([string]$name){
   $body = @{ instanceName = $name; token = "token-$name"; qrcode = $true } | ConvertTo-Json
   $headers = @{ apikey = $ApiKey }
   try {
-    $resp = Invoke-RestMethod -Method Post -Uri "$Domain/instance/create" -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 60
+    Invoke-RestMethod -Method Post -Uri "$Domain/instance/create" -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 60 | Out-Null
     Write-Ok "Instance created: $name"
     return $true
   } catch {
@@ -69,7 +69,7 @@ function Create-Instance([string]$name){
   }
 }
 
-function Fetch-QR([string]$name){
+function Get-QR([string]$name){
   $headers = @{ apikey = $ApiKey }
   try {
     $resp = Invoke-RestMethod -Method Get -Uri "$Domain/instance/connect/$name" -Headers $headers -TimeoutSec 60
@@ -87,21 +87,21 @@ foreach($tag in $Tags){
   Write-Host "`n===== Testing tag: $tag =====" -ForegroundColor Magenta
   try {
     Update-DockerTag -tag $tag
-    Commit-And-Push -tag $tag
+    Publish-Changes -tag $tag
     Write-Info "Waiting service to be available ($TimeoutSeconds s)"
     if(-not (Wait-Service -timeout $TimeoutSeconds)){
       Write-Err "Service did not come up in time for $tag"
       continue
     }
     $iname = ("qrtest-" + ($tag -replace '\.','_') + "-" + (Get-Random))
-    Create-Instance -name $iname | Out-Null
-    if(Fetch-QR -name $iname){
+    New-Instance -name $iname | Out-Null
+    if(Get-QR -name $iname){
       Write-Ok "Tag $tag produced a QR. Instance: $iname"
       break
     } else {
       Write-Warn "Tag $tag did not return QR; moving on"
     }
   } catch {
-    Write-Err "Unexpected error on tag $tag: $($_.Exception.Message)"
+    Write-Err "Unexpected error on tag ${tag}: $($_.Exception.Message)"
   }
 }
