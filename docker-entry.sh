@@ -45,7 +45,7 @@ else
   echo "Resolved Prisma datasource: (empty)"
 fi
 
-case "$(printf '%s' "${DATABASE_ENABLED:-}" | tr '[:upper:]' '[:lower:]')"" in
+case "$(printf '%s' "${DATABASE_ENABLED:-}" | tr '[:upper:]' '[:lower:]')" in
   false|0)
     :
     ;;
